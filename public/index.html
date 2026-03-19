@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@psylabseu — Content Pipeline Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#070E1A;--surface:#0D1A2E;--card:#0F2040;--border:#1A3050;
+  --teal:#028090;--teal2:#02A0B3;--mint:#5BB5A2;--gold:#C9A84C;
+  --muted:#4A6A88;--light:#7A9AB8;--white:#F0F4F8;--dim:#2A4060;
+  --red:#C0392B;--green:#27AE60;
+  --ff:'Cormorant Garamond',serif;
+  --fs:'DM Sans',sans-serif;
+  --fm:'DM Mono',monospace;
+}
+body{background:var(--bg);color:var(--white);font-family:var(--fs);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo{font-family:var(--ff);font-size:22px;color:var(--white)}
+.logo span{color:var(--teal2)}
+.badge{background:var(--surface);border:1px solid var(--teal);color:var(--teal2);font-size:10px;letter-spacing:2px;padding:4px 12px;font-family:var(--fm)}
+
+.pipeline{display:flex;margin-bottom:32px;background:var(--surface);border:1px solid var(--border)}
+.step{flex:1;padding:12px 16px;border-right:1px solid var(--border);cursor:pointer;transition:background .2s}
+.step:last-child{border-right:none}
+.step.active{background:var(--card);border-bottom:2px solid var(--teal)}
+.step.done .step-num{background:var(--teal);color:var(--bg)}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--dim);color:var(--light);font-size:10px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;font-family:var(--fm);transition:all .3s}
+.step-label{font-size:11px;color:var(--light);letter-spacing:.5px}
+.step.active .step-label{color:var(--white)}
+
+.panel{display:none}.panel.active{display:block}
+
+/* Articles */
+.articles{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.article{background:var(--surface);border:1px solid var(--border);padding:14px 16px;display:flex;gap:14px;align-items:flex-start;transition:all .25s;position:relative;overflow:hidden}
+.article.top{border-color:var(--teal);background:var(--card)}
+.article.top::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:var(--teal)}
+.score-num{font-family:var(--ff);font-size:24px;line-height:1;min-width:44px;text-align:center}
+.score-bar{height:3px;background:var(--dim);margin-top:5px;border-radius:2px;overflow:hidden;width:44px}
+.score-fill{height:100%;transition:width .8s ease}
+.article-title{font-size:13px;color:var(--white);line-height:1.45;margin-bottom:5px;font-weight:500}
+.article-meta{font-size:10px;color:var(--muted);margin-bottom:5px}
+.article-url{font-size:10px;color:var(--teal);font-family:var(--fm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:460px}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;margin-right:4px;font-family:var(--fm);letter-spacing:.5px}
+.tag-eu{background:rgba(2,128,144,.12);color:var(--teal2);border:1px solid rgba(2,128,144,.25)}
+.tag-trial{background:rgba(91,181,162,.1);color:var(--mint);border:1px solid rgba(91,181,162,.2)}
+.tag-reg{background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.2)}
+.tag-new{background:rgba(39,174,96,.1);color:#2ecc71;border:1px solid rgba(39,174,96,.2)}
+.sel-badge{font-size:9px;color:var(--teal2);font-family:var(--fm);letter-spacing:1px;margin-left:8px}
+
+/* Post card */
+.post-card{background:var(--surface);border:1px solid var(--border);overflow:hidden}
+.post-header{background:var(--card);padding:12px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.avatar{width:40px;height:40px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--bg);font-weight:500;flex-shrink:0}
+.post-body{padding:18px;font-size:13px;line-height:1.8;color:var(--white);white-space:pre-wrap;background:transparent;border:none;width:100%;resize:none;font-family:var(--fs);min-height:300px;outline:none}
+.post-body:focus{outline:1px solid var(--teal)}
+.post-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.char-count{font-family:var(--fm);font-size:11px;color:var(--muted)}
+.char-count.warn{color:var(--gold)}.char-count.over{color:var(--red)}
+
+.btn{padding:9px 22px;border:1px solid transparent;cursor:pointer;font-size:12px;font-family:var(--fs);letter-spacing:.8px;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--teal);color:var(--bg);border-color:var(--teal)}
+.btn-primary:hover{background:var(--teal2)}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--light)}
+.btn-outline:hover{border-color:var(--teal);color:var(--white)}
+.btn-gold{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.btn-gold:hover{background:#E8C872}
+.btn-publish{background:var(--teal);color:var(--bg);padding:13px 36px;font-size:13px;letter-spacing:1px;border:none}
+.btn-publish:hover{background:var(--teal2)}
+.btn-publish:disabled{opacity:.35;cursor:not-allowed}
+.btn-publish.success{background:var(--gold);color:var(--bg)}
+.section-actions{display:flex;gap:10px;margin-top:16px}
+.section-label{font-size:9.5px;letter-spacing:2.5px;color:var(--muted);font-family:var(--fm);margin-bottom:12px;text-transform:uppercase}
+
+/* Scoring progress */
+.score-progress{height:2px;background:var(--dim);margin:6px 0 20px;overflow:hidden}
+.score-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--mint));width:0;transition:width .7s ease}
+
+/* Status log */
+.log{background:var(--surface);border:1px solid var(--border);padding:14px 18px;font-size:12px;font-family:var(--fm);line-height:1.85;min-height:80px;margin-top:16px;max-height:200px;overflow-y:auto}
+.log .ok{color:var(--mint)}.log .info{color:var(--teal2)}.log .warn{color:var(--gold)}.log .err{color:#e74c3c}.log .dim{color:var(--muted)}
+
+/* Live result */
+.live-result{display:none;background:var(--surface);border:1px solid var(--mint);padding:18px;margin-top:18px}
+.live-result-label{font-size:9px;letter-spacing:2px;color:var(--mint);font-family:var(--fm);margin-bottom:8px}
+.live-url{font-family:var(--fm);font-size:12px;word-break:break-all}
+.live-url a{color:var(--teal2);text-decoration:none}
+.live-url a:hover{color:var(--mint)}
+
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--dim);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .35s ease both}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div>
+      <div class="logo">@psylabseu <span>Content Pipeline</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">Aggregate → Score → Draft → Approve → Publish</div>
+    </div>
+    <div class="badge">LIVE DEMO</div>
+  </div>
+
+  <div class="pipeline">
+    <div class="step active" id="step-1" onclick="goStep(1)"><div class="step-num">1</div><div class="step-label">AGGREGATE</div></div>
+    <div class="step" id="step-2" onclick="goStep(2)"><div class="step-num">2</div><div class="step-label">SCORE</div></div>
+    <div class="step" id="step-3" onclick="goStep(3)"><div class="step-num">3</div><div class="step-label">DRAFT</div></div>
+    <div class="step" id="step-4" onclick="goStep(4)"><div class="step-num">4</div><div class="step-label">APPROVE</div></div>
+    <div class="step" id="step-5" onclick="goStep(5)"><div class="step-num">5</div><div class="step-label">PUBLISH</div></div>
+  </div>
+
+  <!-- ── PANEL 1: AGGREGATE ─────────────────────────────────────── -->
+  <div class="panel active" id="panel-1">
+    <div class="section-label">10 live articles — psychedelics · EU clinical · regulatory · scraped March 2026</div>
+    <div class="articles" id="list-1"></div>
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="runScoring()">Score all articles →</button>
+    </div>
+  </div>
+
+  <!-- ── PANEL 2: SCORE ─────────────────────────────────────────── -->
+  <div class="panel" id="panel-2">
+    <div class="section-label">Relevance scoring — clinical fit · EU focus · lead intent · GMP supply angle</div>
+    <div class="score-progress"><div class="score-progress-fill" id="score-bar"></div></div>
+    <div class="articles" id="list-2"></div>
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="goStep(3);generateDraft()">Draft post with top 5 →</button>
+    </div>
+  </div>
+
+  <!-- ── PANEL 3: DRAFT ─────────────────────────────────────────── -->
+  <div class="panel" id="panel-3">
+    <div class="section-label">AI-generated post — @psylabseu voice · clinician-to-clinician · no hype</div>
+    <div class="post-card">
+      <div class="post-header">
+        <div class="avatar">PL</div>
+        <div><div style="font-size:13px;font-weight:500">@psylabseu</div><div style="font-size:11px;color:var(--muted)">PsyLabs EU · GMP Psychedelics Manufacturing</div></div>
+        <div style="margin-left:auto;color:var(--muted)">𝕏</div>
+      </div>
+      <textarea class="post-body" id="draft-ta" spellcheck="true" oninput="updateCount()"></textarea>
+      <div class="post-footer">
+        <span id="char-out" class="char-count">0 chars</span>
+        <button class="btn btn-outline" onclick="resetDraft()">↺ Reset draft</button>
+      </div>
+    </div>
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="goApprove()">Review &amp; approve →</button>
+    </div>
+  </div>
+
+  <!-- ── PANEL 4: APPROVE ──────────────────────────────────────── -->
+  <div class="panel" id="panel-4">
+    <div class="section-label">Human-in-the-loop — John reviews before anything goes live</div>
+    <div class="post-card">
+      <div class="post-header">
+        <div class="avatar">PL</div>
+        <div><div style="font-size:13px;font-weight:500">@psylabseu</div><div style="font-size:11px;color:var(--muted)">PsyLabs EU · GMP Psychedelics Manufacturing</div></div>
+        <div style="margin-left:auto;color:var(--muted)">𝕏</div>
+      </div>
+      <div id="approve-preview" style="padding:18px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--white)"></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:16px">
+      <button class="btn btn-outline" onclick="goStep(3)">← Edit</button>
+      <button class="btn btn-gold" onclick="goPublish()">✓ Approve — ready to publish</button>
+    </div>
+  </div>
+
+  <!-- ── PANEL 5: PUBLISH ──────────────────────────────────────── -->
+  <div class="panel" id="panel-5">
+    <div class="section-label">Publishing via serverless API — credentials secured in Vercel environment variables</div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);padding:16px 20px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.8;font-family:var(--fm)">
+      <span style="color:var(--mint)">✓</span> Credentials stored as Vercel env vars — never exposed in browser<br>
+      <span style="color:var(--mint)">✓</span> OAuth 1.0a signing handled server-side at <span style="color:var(--teal2)">/api/tweet</span><br>
+      <span style="color:var(--mint)">✓</span> Post approved and ready
+    </div>
+
+    <div id="publish-preview" style="background:var(--surface);border:1px solid var(--border);padding:18px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--white);margin-bottom:18px"></div>
+
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-publish" id="pub-btn" onclick="publish()">Post to @psylabseu →</button>
+      <button class="btn btn-outline" onclick="copyText()">Copy text</button>
+      <span style="font-size:11px;color:var(--muted);font-family:var(--fm)">or copy and post manually at x.com</span>
+    </div>
+
+    <div class="log" id="log">
+      <div class="dim">// Status log</div>
+      <div class="info">// Post approved — awaiting publish command</div>
+    </div>
+
+    <div class="live-result" id="live-result">
+      <div class="live-result-label">✓ POSTED LIVE TO @PSYLABSEU</div>
+      <div class="live-url" id="live-url"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ARTICLES = [
+  {t:"Czech Republic passes landmark bill enabling medical psilocybin — first EU country to legalise for depression, PTSD and substance use disorders",s:"Lancet Regional Health — Europe",d:"Nov 2025",u:"pmc.ncbi.nlm.nih.gov/articles/PMC12670272",tags:["eu","reg","new"]},
+  {t:"Compass Pathways achieves primary endpoint in second Phase 3 COMP360 psilocybin trial for TRD — p<0.001 at Week 6, effects maintained 26 weeks",s:"Compass Pathways / Business Wire",d:"Mar 2026",u:"ir.compasspathways.com/news/comp360-phase3-comp006",tags:["trial","new"]},
+  {t:"EU vs US psilocybin trials: 18 vs 149 registered — Germany, Czech Republic, Denmark and Netherlands leading European momentum",s:"Journal of Clinical Medicine (MDPI)",d:"Sep 2025",u:"mdpi.com/2077-0383/14/18/6613",tags:["eu","trial"]},
+  {t:"Psychedelics pathway to European healthcare: EMA approval, HTA evaluations and country-by-country reimbursement challenges",s:"European Neuropsychopharmacology",d:"Jan 2026",u:"sciencedirect.com/science/article/pii/S0924977X25007862",tags:["eu","reg"]},
+  {t:"EMA revising guideline on clinical investigation for depression — new dedicated section on psychedelics trial design requirements",s:"PMC / EMA regulatory review",d:"Feb 2025",u:"pmc.ncbi.nlm.nih.gov/articles/PMC12244136",tags:["eu","reg"]},
+  {t:"Switzerland, Germany and Czech Republic: growing momentum toward regulated psychedelic access — evolving EU clinical landscape",s:"University of Barcelona / Lancet",d:"Feb 2026",u:"pmc.ncbi.nlm.nih.gov/articles/PMC12670272",tags:["eu","reg"]},
+  {t:"Psilocybin-assisted therapy pilot for treatment-resistant depression: feasibility, safety and outcome predictors — multi-site cohort",s:"Therapeutic Advances in Psychopharmacology",d:"Oct 2025",u:"journals.sagepub.com/doi/10.1177/20451253251377187",tags:["trial"]},
+  {t:"Compass Pathways COMP360 Phase 2b published in NEJM — 25mg single dose, 22 sites across 10 countries, statistically significant reduction in TRD",s:"Compass Pathways / NEJM",d:"2022 (landmark)",u:"compasspathways.com/comp360-psilocybin-treatment-in-trd",tags:["trial"]},
+  {t:"EU Health Technology Assessment Regulation (HTAR) in force January 2025 — harmonises clinical assessments, reimbursement remains decentralised",s:"University of Barcelona / Lancet",d:"Feb 2026",u:"pmc.ncbi.nlm.nih.gov/articles/PMC12670272",tags:["eu","reg"]},
+  {t:"134 psilocybin trials, 54 indications, 0 marketing approvals — structural analysis of barriers slowing EU regulatory pathway",s:"PMC",d:"2024",u:"pmc.ncbi.nlm.nih.gov/articles/PMC11016263",tags:["trial"]},
+];
+
+const SCORES = [97,94,91,88,86,90,72,68,75,65];
+
+const DRAFT = `Five signals worth reading if you're tracking the EU psychedelics pipeline this week 🧵
+
+1. Czech Republic became the first EU country to legalise medical psilocybin — for depression, PTSD and substance use disorders, administered by licensed psychiatrists. Emerging evidence suggests this will accelerate access timelines across neighbouring member states. → thelancet.com
+
+2. Compass Pathways hit the primary endpoint in its second Phase 3 TRD trial. A single 25mg dose, p<0.001 at Week 6, with effects maintained through 26 weeks in responding patients. The EU supply question is now a clinical readiness question. → compasspathways.com
+
+3. As of May 2025, the EU has 18 registered psilocybin trials vs 149 in the US. Germany, Czech Republic, Denmark and the Netherlands are leading. The gap is closing — and the supply infrastructure needs to close with it. → mdpi.com
+
+4. EMA is revising its guideline on clinical investigation for depression to include a dedicated section on psychedelics trial design. Sponsors preparing EU submissions need to be reading this now. → ema.europa.eu
+
+5. Switzerland, Germany and Czech Republic are demonstrating what regulated psychedelic access looks like in practice. The regulatory pathway is becoming clearer — but procurement remains the constraint. → pmc.ncbi.nlm.nih.gov
+
+PsyLabs EU manufactures GMP-grade psilocybin for licensed EU clinical programmes. If you're evaluating supply for a trial or compassionate use pathway, the clinical dossier is in the link in bio.
+
+Follow @psylabseu for two curated reads per week.`;
+
+let approvedText = '';
+
+function tagClass(t){ return {eu:'tag-eu',reg:'tag-reg',trial:'tag-trial',new:'tag-new'}[t]||''; }
+function scoreColor(s){ return s>=90?'var(--mint)':s>=80?'var(--teal2)':s>=70?'var(--gold)':'var(--muted)'; }
+
+function renderList(id, scored){
+  const el = document.getElementById(id);
+  const list = scored ? [...ARTICLES].map((a,i)=>({...a,score:SCORES[i]})).sort((a,b)=>b.score-a.score) : ARTICLES;
+  el.innerHTML = list.map((a,i)=>{
+    const top = scored && i<5;
+    const sc = a.score||0;
+    return `<div class="article${top?' top':''} fade-up" style="animation-delay:${i*.04}s">
+      <div>
+        <div class="score-num" style="color:${scored?scoreColor(sc):'var(--muted)'}">${scored?sc:'—'}</div>
+        <div class="score-bar"><div class="score-fill" style="width:${sc}%;background:${scoreColor(sc)}"></div></div>
+      </div>
+      <div style="flex:1">
+        <div class="article-title">${a.t}${top?'<span class="sel-badge"> ✓ SELECTED</span>':''}</div>
+        <div class="article-meta">${a.s} · ${a.d}</div>
+        <div style="margin:4px 0">${a.tags.map(t=>`<span class="tag ${tagClass(t)}">${t.toUpperCase()}</span>`).join('')}</div>
+        <div class="article-url">${a.u}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function runScoring(){
+  goStep(2);
+  const bar = document.getElementById('score-bar');
+  bar.style.width='0%';
+  renderList('list-2', false);
+  let p=0;
+  const iv = setInterval(()=>{
+    p+=7; bar.style.width=Math.min(p,100)+'%';
+    if(p>=100){ clearInterval(iv); renderList('list-2',true); }
+  },55);
+}
+
+function generateDraft(){
+  const ta = document.getElementById('draft-ta');
+  ta.value=''; let i=0;
+  const iv = setInterval(()=>{
+    i+=4; ta.value=DRAFT.slice(0,i); updateCount(); ta.scrollTop=ta.scrollHeight;
+    if(i>=DRAFT.length) clearInterval(iv);
+  },10);
+}
+
+function resetDraft(){ document.getElementById('draft-ta').value=DRAFT; updateCount(); }
+
+function updateCount(){
+  const n = document.getElementById('draft-ta').value.length;
+  const el = document.getElementById('char-out');
+  el.textContent = n+' chars';
+  el.className = 'char-count'+(n>2800?' over':n>2400?' warn':'');
+}
+
+function goApprove(){
+  approvedText = document.getElementById('draft-ta').value;
+  document.getElementById('approve-preview').textContent = approvedText;
+  goStep(4);
+}
+
+function goPublish(){
+  document.getElementById('publish-preview').textContent = approvedText;
+  goStep(5);
+}
+
+function copyText(){
+  navigator.clipboard.writeText(approvedText).then(()=>log('info','// Copied to clipboard'));
+}
+
+function goStep(n){
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.toggle('active',i+1===n);
+    s.classList.toggle('done',i+1<n);
+    s.querySelector('.step-num').textContent = i+1<n ? '✓' : i+1;
+  });
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i+1===n));
+}
+
+function log(type, msg){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className=type; d.textContent=msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+async function publish(){
+  const btn = document.getElementById('pub-btn');
+  if(!approvedText){ log('err','// No approved text — go back to step 4'); return; }
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> Signing &amp; posting...';
+  log('info','// POST /api/tweet');
+  log('dim','// OAuth 1.0a signing server-side...');
+
+  try {
+    const res = await fetch('/api/tweet',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text: approvedText})
+    });
+    const data = await res.json();
+
+    if(res.ok && data.success){
+      log('ok','// ✓ Posted — tweet ID: '+data.id);
+      btn.className='btn btn-publish success';
+      btn.textContent='✓ Live on X';
+      btn.disabled=false;
+      const r = document.getElementById('live-result');
+      r.style.display='block';
+      document.getElementById('live-url').innerHTML=
+        `<a href="${data.url}" target="_blank">${data.url}</a>`;
+    } else {
+      log('err','// Error: '+(data.error||JSON.stringify(data)));
+      log('warn','// Check env vars in Vercel — X_ACCESS_TOKEN and X_ACCESS_TOKEN_SECRET needed');
+      btn.disabled=false; btn.textContent='Retry →';
+    }
+  } catch(e){
+    log('err','// '+e.message);
+    btn.disabled=false; btn.textContent='Retry →';
+  }
+}
+
+// Init
+renderList('list-1', false);
+document.getElementById('draft-ta').value = DRAFT;
+updateCount();
+</script>
+</body>
+</html>
